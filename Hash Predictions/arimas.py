@@ -9,9 +9,18 @@ import time
 
 
 
-df=pd.read_csv('paris/testLong.csv')
+DATA_PATH = "Hash Predictions/testLong_hash.csv"
+
+
+df=pd.read_csv(DATA_PATH)
 
 print(df.head(3))
+
+df['Month'] = pd.to_datetime(df['Month'])
+
+#CUTOFF
+
+df = df[df["Month"] >= "2016-01-01"] 
 
 
 from pmdarima.model_selection import train_test_split
@@ -27,6 +36,10 @@ print(f"{df.shape[0] - train_len} test samples")
 
 from pandas.plotting import lag_plot
 
+
+date_range_series = pd.date_range(start=df["Month"].iloc[-1], end='2030-01-01', freq='D')
+
+test_range_series = pd.date_range(start=train_data["Month"].iloc[-1], end='2024-01-01', freq='D')
 
 '''
 fig, axes = plt.subplots(3, 2, figsize=(8, 12))
@@ -73,35 +86,42 @@ from pmdarima.metrics import smape
 
 model = auto  # seeded from the model we've already fit
 
-def forecast_one_step():
-    fc, conf_int = model.predict(n_periods=1, return_conf_int=True)
-    return (
-        fc.tolist()[0],
-        np.asarray(conf_int).tolist()[0])
+# def forecast_one_step():
+#     fc, conf_int = model.predict(n_periods=1, return_conf_int=True)
+#     return (
+#         fc.tolist()[0],
+#         np.asarray(conf_int).tolist()[0])
 
-forecasts = []
-confidence_intervals = []
+# forecasts = []
+# confidence_intervals = []
 
-for new_ob in y_test:
-    fc, conf = forecast_one_step()
-    forecasts.append(fc)
-    confidence_intervals.append(conf)
+# for new_ob in y_test:
+#     fc, conf = forecast_one_step()
+#     forecasts.append(fc)
+#     confidence_intervals.append(conf)
 
-    # Updates the existing model with a small number of MLE steps
-    model.update(new_ob)
+#     # Updates the existing model with a small number of MLE steps
+#     model.update(new_ob)
 
-print(f"Mean squared error: {mean_squared_error(y_test, forecasts)}")
-print(f"SMAPE: {smape(y_test, forecasts)}")
+# print(f"Mean squared error: {mean_squared_error(y_test, forecasts)}")
+# print(f"SMAPE: {smape(y_test, forecasts)}")
+
+
+
 
 
 fig, axes = plt.subplots(2, 1, figsize=(12, 12))
 
-# --------------------- Actual vs. Predicted --------------------------
-axes[0].plot(y_train, color='blue', label='Training Data')
-axes[0].plot(test_data.index, forecasts, color='green', marker='o',
-             label='Predicted Price')
 
-axes[0].plot(test_data.index, y_test, color='red', label='Actual Price')
+
+
+
+# --------------------- Actual vs. Predicted --------------------------
+axes[0].plot(train_data["Month"], y_train, color='blue', label='Training Data')
+axes[0].plot(test_data["Month"], y_test, color='green', marker='o',
+             label='Predicted Price') #CHANGE TO forecasts_one_step
+
+axes[0].plot(test_data["Month"], y_test, color='red', label='Actual Price')
 axes[0].set_title('Prediction')
 axes[0].set_xlabel('Dates')
 axes[0].set_ylabel('Prices')
@@ -111,16 +131,27 @@ axes[0].legend()
 
 
 # ------------------ Predicted with confidence intervals ----------------
-axes[1].plot(y_train, color='blue', label='Training Data')
-axes[1].plot(test_data.index, forecasts, color='green',
+# axes[1].plot(y_train, color='blue', label='Training Data')
+# axes[1].plot(test_data.index, forecasts, color='green',
+#              label='Predicted Hash')
+
+# axes[1].plot(train_data["Month"], y_train, color='blue', label='Training Data')
+axes[1].plot(df["Month"], df["Hash"], color='blue', label='Training Data')
+
+fc, conf_int = model.predict(n_periods=len(test_range_series), return_conf_int=True)
+print(fc)
+print(conf_int)
+
+
+axes[1].plot(test_range_series, fc, color='green',
              label='Predicted Hash')
 
 axes[1].set_title('Prices Predictions & Confidence Intervals')
 axes[1].set_xlabel('Dates')
 axes[1].set_ylabel('Prices')
 
-conf_int = np.asarray(confidence_intervals)
-axes[1].fill_between(test_data.index,
+conf_int = np.asarray(conf_int)
+axes[1].fill_between(test_range_series,
                      conf_int[:, 0], conf_int[:, 1],
                      alpha=0.9, color='orange',
                      label="Confidence Intervals")
@@ -145,9 +176,7 @@ time.sleep (10)
 
 
 
-DATA_PATH = "paris/testLong.csv"
-
-df=pd.read_csv('paris/testLong.csv')
+df=pd.read_csv(DATA_PATH)
 df=df.rename(columns={'Hash':'hash','Month':'date'})
 df['date'] = pd.to_datetime(df['date'])
 df.set_index(df['date'], inplace=True)
@@ -215,16 +244,13 @@ preds = model.predict(test.shape[0])
 
 print ('ok here')
 x = np.arange(df.shape[0])
-plt.plot(df.values[:tsize], train)
-plt.plot(df.values[tsize:], preds)
+plt.p#lot(df.values[:tsize], train)
+plt.p#lot(df.values[tsize:], preds)
 plt.show()
 
 
 '''
 
-
-
-DATA_PATH = "paris/testLong.csv"
 
 with open(DATA_PATH) as f:
 	bitHist = pd.read_csv(DATA_PATH)
